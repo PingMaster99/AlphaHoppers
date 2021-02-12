@@ -180,7 +180,6 @@ class Board:
         path.append(initial_coordinate)
 
         if initial_coordinate == final_coordinate:
-            print("here for the jump", final_coordinate)
             self.last_jump_path = deepcopy(path)
 
         else:
