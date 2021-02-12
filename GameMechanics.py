@@ -81,3 +81,8 @@ class Hoppers:
         """
         return self.board
 
+    def restart(self):
+        self.__init__()
+
+    def get_possible_moves(self, piece):
+        return self.board.get_valid_moves(piece)

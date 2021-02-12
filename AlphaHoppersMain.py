@@ -17,20 +17,20 @@ import GameMechanics as Mechanics
 import AI as AI
 import pygame as p
 
-
 hopper_engine = Mechanics.Hoppers()
+hopper_engine.get_board().print_board()
+
 p.init()
 WIDTH = HEIGHT = 520
 DIMENSION = 10
 SQ_SIZE = HEIGHT // DIMENSION
 MAX_FPS = 144
 COLORS = {1: [p.Color("yellowgreen"), SQ_SIZE], 2: [p.Color("cyan"), SQ_SIZE]}
-
+FONT = p.font.SysFont("Arial", 45)
+SMALL_FONT = p.font.SysFont("Arial", 20)
 """
 User input and updating the graphics
 """
-
-hopper_engine.get_board().print_board()
 
 
 def main():
@@ -44,6 +44,7 @@ def main():
     current_selection = []
     ai_turn = False
     game_playing = True
+
     while game_playing:
 
         for e in p.event.get():
@@ -70,32 +71,55 @@ def main():
             elif e.type == p.KEYDOWN:
                 if e.key == p.K_SPACE:
                     current_selection.clear()
-
-        draw_game(screen, hopper_engine)
+        if len(current_selection) > 0:
+            draw_game(screen, hopper_engine, current_selection[0])
+        else:
+            draw_game(screen, hopper_engine)
         clock.tick(MAX_FPS)
         p.display.flip()
 
         if winner is not None and winner != -1:
             print(f"Gano el jugador {winner}")
-            break
+            game_playing = initialize_game(screen, winner)
+            winner = None
 
 
-def initialize_game():
+def initialize_game(screen, winner):
     """
     Generates a new game
     :return: hoppers game
     """
-    return Mechanics.Hoppers()
+    game_over = True
+    game_won = FONT.render(f"¡Ganó el jugador {winner}!", True, p.Color("black"))
+    restart = SMALL_FONT.render("Presione enter para jugar de nuevo", True, p.Color("black"))
+    screen.blit(game_won, (WIDTH//7, HEIGHT//2.5))
+    screen.blit(restart, (WIDTH//5, HEIGHT//2))
+    p.display.flip()
+    while game_over:
+
+        for e in p.event.get():
+            if e.type == p.QUIT:
+                p.quit()
+                return False
+
+            elif e.type == p.KEYDOWN:
+                if e.key == p.K_RETURN:
+                    game_over = False
+                    break
+
+    hopper_engine.restart()
+    return True
 
 
-def draw_game(screen, game):
+def draw_game(screen, game, selected_piece=None):
     """
     Draws the game in the window
+    :param selected_piece:
     :param screen: screen to draw on
     :param game: game that is being played
     """
     draw_board(screen, game)  # squares on the board
-    draw_pieces(screen, game.get_board().board)   # pieces
+    draw_pieces(screen, game.get_board().board, selected_piece)   # pieces
 
 
 def draw_board(screen, game):
@@ -119,9 +143,10 @@ def draw_board(screen, game):
             p.draw.rect(screen, color, p.Rect(column * SQ_SIZE, row * SQ_SIZE, SQ_SIZE, SQ_SIZE))
 
 
-def draw_pieces(screen, board):
+def draw_pieces(screen, board, highlighted=None):
     """
     Draws the hopper pieces
+    :param highlighted: highlighted piece
     :param screen: screen to draw on
     :param board: Hoppers board
     """
@@ -130,9 +155,20 @@ def draw_pieces(screen, board):
             piece = board[row][column]
             if piece == 0:
                 continue
+            elif [row, column] == highlighted:
+                p.draw.circle(screen, p.Color("yellow"), (column * SQ_SIZE + SQ_SIZE / 2, row * SQ_SIZE + SQ_SIZE / 2),
+                              SQ_SIZE / 3.2)
+                draw_possible_moves(screen, highlighted)
             else:
                 p.draw.circle(screen, COLORS[piece][0], (column * SQ_SIZE + SQ_SIZE / 2, row * SQ_SIZE + SQ_SIZE / 2),
                               SQ_SIZE / 3.2)
+
+
+def draw_possible_moves(screen, piece):
+    moves = hopper_engine.get_possible_moves(piece)
+    for row, column in moves:
+        p.draw.circle(screen, p.Color("darkgray"), (column * SQ_SIZE + SQ_SIZE / 2, row * SQ_SIZE + SQ_SIZE / 2),
+                      SQ_SIZE / 3.2)
 
 
 def make_human_move(player, move):
